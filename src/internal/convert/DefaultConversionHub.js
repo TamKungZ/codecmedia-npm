@@ -25,9 +25,22 @@ export class DefaultConversionHub {
   #audioToAudioTranscodeConverter = new UnsupportedRouteConverter(
     "audio->audio transcoding is not implemented yet (planned conversion hub path)"
   );
-  #imageToImageTranscodeConverter = new UnsupportedRouteConverter(
-    "image->image transcoding is not implemented yet (requires canvas/sharp)"
-  );
+  #imageToImageTranscodeConverter;
+
+  /**
+   * @param {{ imageToImageTranscodeConverter?: { convert: Function } | null }=} options
+   */
+  constructor(options = {}) {
+    const imageToImageTranscodeConverter = options?.imageToImageTranscodeConverter ?? null;
+    if (imageToImageTranscodeConverter != null && typeof imageToImageTranscodeConverter.convert !== "function") {
+      throw new CodecMediaException("imageToImageTranscodeConverter must provide a convert(request) function");
+    }
+
+    this.#imageToImageTranscodeConverter = imageToImageTranscodeConverter
+      ?? new UnsupportedRouteConverter(
+        "image->image transcoding is not implemented in zero-dependency core (provide an opt-in external converter)"
+      );
+  }
 
   /**
    * Converts media based on the conversion request.

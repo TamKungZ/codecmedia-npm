@@ -53,9 +53,14 @@ const PROBE_PREFIX_BYTES = 128 * 1024;
  * light-weight conversion routing.
  */
 export class StubCodecMediaEngine extends CodecMediaEngine {
-  constructor() {
+  #ffprobeEnhancementEnabled;
+
+  constructor(options = {}) {
     super();
-    this.conversionHub = new DefaultConversionHub();
+    this.#ffprobeEnhancementEnabled = options?.enableFfprobeEnhancement === true;
+    this.conversionHub = new DefaultConversionHub({
+      imageToImageTranscodeConverter: options?.imageToImageTranscodeConverter ?? null,
+    });
   }
 
   get(input) {
@@ -490,7 +495,7 @@ export class StubCodecMediaEngine extends CodecMediaEngine {
     if (likelyMov) {
       try {
         const info = MovCodec.decode(bytes, input);
-        return createProbeResult({
+        const base = createProbeResult({
           input,
           mimeType: "video/quicktime",
           extension: "mov",
@@ -498,16 +503,18 @@ export class StubCodecMediaEngine extends CodecMediaEngine {
           durationMillis: info.durationMillis ?? null,
           tags: { sizeBytes: String(size) },
         });
+        return this.#maybeEnrichProbeWithFfprobe(input, base);
       } catch {
         // Fall back to extension-only probe for malformed/partial files.
       }
-      return createProbeResult({
+      const base = createProbeResult({
         input,
         mimeType: "video/quicktime",
         extension: "mov",
         mediaType: MediaType.VIDEO,
         tags: { sizeBytes: String(size) },
       });
+      return this.#maybeEnrichProbeWithFfprobe(input, base);
     }
 
     if (likelyMp4) {
@@ -516,7 +523,7 @@ export class StubCodecMediaEngine extends CodecMediaEngine {
       const mediaType = outputExt === "m4a" ? MediaType.AUDIO : MediaType.VIDEO;
       try {
         const info = Mp4Codec.decode(bytes, input);
-        return createProbeResult({
+        const base = createProbeResult({
           input,
           mimeType,
           extension: outputExt,
@@ -524,22 +531,24 @@ export class StubCodecMediaEngine extends CodecMediaEngine {
           durationMillis: info.durationMillis ?? null,
           tags: { sizeBytes: String(size) },
         });
+        return this.#maybeEnrichProbeWithFfprobe(input, base);
       } catch {
         // Fall back to extension-only probe for malformed/partial files.
       }
-      return createProbeResult({
+      const base = createProbeResult({
         input,
         mimeType,
         extension: outputExt,
         mediaType,
         tags: { sizeBytes: String(size) },
       });
+      return this.#maybeEnrichProbeWithFfprobe(input, base);
     }
 
     if (likelyWebm) {
       try {
         const info = WebmCodec.decode(bytes, input);
-        return createProbeResult({
+        const base = createProbeResult({
           input,
           mimeType: "video/webm",
           extension: "webm",
@@ -547,16 +556,18 @@ export class StubCodecMediaEngine extends CodecMediaEngine {
           durationMillis: info.durationMillis ?? null,
           tags: { sizeBytes: String(size) },
         });
+        return this.#maybeEnrichProbeWithFfprobe(input, base);
       } catch {
         // Fall back to extension-only probe for malformed/partial files.
       }
-      return createProbeResult({
+      const base = createProbeResult({
         input,
         mimeType: "video/webm",
         extension: "webm",
         mediaType: MediaType.VIDEO,
         tags: { sizeBytes: String(size) },
       });
+      return this.#maybeEnrichProbeWithFfprobe(input, base);
     }
 
     return createProbeResult({
@@ -761,6 +772,172 @@ export class StubCodecMediaEngine extends CodecMediaEngine {
     } finally {
       fs.closeSync(fd);
     }
+  }
+
+  #maybeEnrichProbeWithFfprobe(input, baseProbe) {
+    if (!this.#ffprobeEnhancementEnabled) {
+      return baseProbe;
+    }
+
+    const ffprobe = this.#readFfprobeJson(input);
+    if (!ffprobe) {
+      return baseProbe;
+    }
+
+    const rawStreams = Array.isArray(ffprobe.streams) ? ffprobe.streams : [];
+    if (rawStreams.length === 0) {
+      return baseProbe;
+    }
+
+    const streams = [];
+    let displayAspectRatio = null;
+    let bitDepth = null;
+    let videoBitrateKbps = 0;
+    let audioBitrateKbps = 0;
+
+    for (const stream of rawStreams) {
+      const kind = this.#streamKindFromCodecType(stream?.codec_type);
+      const codec = String(stream?.codec_name || baseProbe.extension || "unknown").toLowerCase();
+      const bitrateKbps = this.#bitrateKbpsFromFfprobeStream(stream);
+
+      if (kind === StreamKind.VIDEO) {
+        if (bitrateKbps != null) {
+          videoBitrateKbps += bitrateKbps;
+        }
+        if (!displayAspectRatio) {
+          const dar = typeof stream?.display_aspect_ratio === "string"
+            ? stream.display_aspect_ratio.trim()
+            : "";
+          if (dar && dar !== "0:1") {
+            displayAspectRatio = dar;
+          }
+        }
+        if (bitDepth == null) {
+          const parsedDepth = this.#toNullableInt(stream?.bits_per_raw_sample ?? stream?.bits_per_sample);
+          if (parsedDepth != null && parsedDepth > 0) {
+            bitDepth = parsedDepth;
+          }
+        }
+      }
+
+      if (kind === StreamKind.AUDIO && bitrateKbps != null) {
+        audioBitrateKbps += bitrateKbps;
+      }
+
+      streams.push(createStreamInfo({
+        index: streams.length,
+        kind,
+        codec,
+        bitrateKbps: bitrateKbps ?? null,
+        sampleRate: kind === StreamKind.AUDIO ? this.#toNullableInt(stream?.sample_rate) : null,
+        channels: kind === StreamKind.AUDIO ? this.#toNullableInt(stream?.channels) : null,
+        width: kind === StreamKind.VIDEO ? this.#toNullableInt(stream?.width) : null,
+        height: kind === StreamKind.VIDEO ? this.#toNullableInt(stream?.height) : null,
+        frameRate: kind === StreamKind.VIDEO
+          ? this.#parseFrameRate(stream?.avg_frame_rate ?? stream?.r_frame_rate)
+          : null,
+      }));
+    }
+
+    const tags = { ...(baseProbe.tags ?? {}) };
+    if (displayAspectRatio) {
+      tags.displayAspectRatio = displayAspectRatio;
+    }
+    if (bitDepth != null) {
+      tags.bitDepth = String(bitDepth);
+    }
+    if (videoBitrateKbps > 0) {
+      tags.videoBitrateKbps = String(videoBitrateKbps);
+    }
+    if (audioBitrateKbps > 0) {
+      tags.audioBitrateKbps = String(audioBitrateKbps);
+    }
+
+    return createProbeResult({
+      input: baseProbe.input,
+      mimeType: baseProbe.mimeType,
+      extension: baseProbe.extension,
+      mediaType: baseProbe.mediaType,
+      durationMillis: this.#durationMillisFromFfprobe(ffprobe) ?? baseProbe.durationMillis ?? null,
+      streams: streams.length > 0 ? streams : baseProbe.streams,
+      tags,
+    });
+  }
+
+  #readFfprobeJson(input) {
+    try {
+      const output = execFileSync(
+        "ffprobe",
+        ["-v", "error", "-print_format", "json", "-show_format", "-show_streams", input],
+        { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }
+      );
+      return JSON.parse(output);
+    } catch {
+      return null;
+    }
+  }
+
+  #durationMillisFromFfprobe(ffprobe) {
+    const formatDuration = this.#toNullableNumber(ffprobe?.format?.duration);
+    if (formatDuration != null && formatDuration > 0) {
+      return Math.floor(formatDuration * 1000);
+    }
+
+    let maxStreamDuration = null;
+    for (const stream of Array.isArray(ffprobe?.streams) ? ffprobe.streams : []) {
+      const value = this.#toNullableNumber(stream?.duration);
+      if (value == null || value <= 0) continue;
+      if (maxStreamDuration == null || value > maxStreamDuration) {
+        maxStreamDuration = value;
+      }
+    }
+
+    return maxStreamDuration == null ? null : Math.floor(maxStreamDuration * 1000);
+  }
+
+  #streamKindFromCodecType(codecType) {
+    switch (codecType) {
+      case "audio": return StreamKind.AUDIO;
+      case "video": return StreamKind.VIDEO;
+      case "subtitle": return StreamKind.SUBTITLE;
+      case "data": return StreamKind.DATA;
+      default: return StreamKind.UNKNOWN;
+    }
+  }
+
+  #bitrateKbpsFromFfprobeStream(stream) {
+    const direct = this.#toNullableNumber(stream?.bit_rate);
+    if (direct != null && direct > 0) {
+      return Math.floor(direct / 1000);
+    }
+
+    const tagBps = this.#toNullableNumber(stream?.tags?.BPS ?? stream?.tags?.["BPS-eng"]);
+    if (tagBps != null && tagBps > 0) {
+      return Math.floor(tagBps / 1000);
+    }
+
+    return null;
+  }
+
+  #parseFrameRate(value) {
+    if (typeof value !== "string" || value.trim() === "") return null;
+    const [numRaw, denRaw] = value.split("/");
+    const num = this.#toNullableNumber(numRaw);
+    const den = this.#toNullableNumber(denRaw);
+    if (num == null || den == null || den === 0) return null;
+    return Number((num / den).toFixed(3));
+  }
+
+  #toNullableNumber(value) {
+    if (value == null) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  #toNullableInt(value) {
+    const parsed = this.#toNullableNumber(value);
+    if (parsed == null) return null;
+    return Math.trunc(parsed);
   }
 
   #openExternalApp(input) {

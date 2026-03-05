@@ -36,12 +36,18 @@ CodecMedia is a Node.js(fast port) library for media probing, validation, metada
   - MP4 (basic ISO BMFF parsing)
   - WebM (EBML container parsing)
 - Validation with size limits and strict parser checks for MP3/OGG/WAV/PNG/JPEG/WebP/BMP/TIFF/HEIC/HEIF/AVIF/MOV/MP4/WebM
-- MOV/MP4/WebM probe tags include richer video metadata when present (for example `displayAspectRatio`, `bitDepth`, `videoBitrateKbps`, `audioBitrateKbps`)
 - Metadata read/write with sidecar persistence (`.codecmedia.properties`)
 - In-Node extraction and conversion file operations
-- Image-to-image conversion support for: `png`, `jpg`/`jpeg`, `webp`, `bmp`, `tif`/`tiff`, `heic`/`heif`
 - Playback API with dry-run support and optional desktop-open backend
 - Conversion hub routing with explicit unsupported routes and a stub `wav <-> pcm` path
+
+### Optional External Adapters (Opt-In)
+
+- Core default behavior is pure Node.js and does not execute external binaries.
+- You can opt in to external adapters by passing options to `createDefault(options)`.
+- Example opt-in capabilities:
+  - `enableFfprobeEnhancement: true` to enrich MOV/MP4/WebM probe output when `ffprobe` is available.
+  - `imageToImageTranscodeConverter` to inject a custom image converter implementation (for example one backed by `ffmpeg`).
 
 ## API Behavior Summary
 
@@ -61,6 +67,8 @@ CodecMedia is a Node.js(fast port) library for media probing, validation, metada
 - `readMetadata` uses sidecar metadata persistence; it is **not** a full embedded tag extractor (for example ID3 album art/APIC).
 - Audio-to-audio conversion is not implemented yet for real transcode cases (for example `mp3 -> ogg`).
 - The only temporary audio conversion path is a stub `wav <-> pcm` route.
+- Image-to-image transcoding is not enabled in the default zero-dependency core.
+- Rich MOV/MP4/WebM ffprobe enrichment is disabled by default and must be explicitly enabled.
 - For OpenAL workflows that require OGG from MP3 input, use an external transcoder first (for example ffmpeg), then play the produced OGG.
 
 ## Requirements
