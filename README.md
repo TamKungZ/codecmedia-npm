@@ -1,4 +1,4 @@
-# CodecMedia
+# CodecMedia !!!Alpha Test!!!
 
 [![npm version](https://img.shields.io/npm/v/codecmedia.svg)](https://www.npmjs.com/package/codecmedia)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -74,7 +74,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 - `readMetadata` uses sidecar metadata persistence; it is **not** a full embedded tag extractor (for example ID3 album art/APIC).
 - Audio-to-audio conversion is not implemented yet for real transcode cases (for example `mp3 -> ogg`).
 - The only temporary audio conversion path is a stub `wav <-> pcm` route.
-- Default zero-dependency image transcoding currently supports `jpg/jpeg -> png/bmp`.
+- Default image transcoding supports `jpg/jpeg -> png/bmp` (including progressive JPEG sources via bundled JPEG decoder).
 - Other image transcode pairs are still limited and should use `imageToImageTranscodeConverter` override when needed.
 - Rich MOV/MP4/WebM ffprobe enrichment is disabled by default and must be explicitly enabled.
 - For OpenAL workflows that require OGG from MP3 input, use an external transcoder first (for example ffmpeg), then play the produced OGG.

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import jpeg from "jpeg-js";
 import { CodecMediaException } from "../../errors/CodecMediaException.js";
 import { PngCodec } from "../image/png/PngCodec.js";
 
@@ -94,87 +95,34 @@ function decodeBaselineJpegToRgb(bytes) {
     throw new CodecMediaException("Invalid JPEG data");
   }
 
-  const quantTables = new Array(4).fill(null);
-  const huffmanDc = new Array(4).fill(null);
-  const huffmanAc = new Array(4).fill(null);
+  try {
+    const decoded = jpeg.decode(data, { useTArray: true });
+    const width = Number(decoded?.width ?? 0);
+    const height = Number(decoded?.height ?? 0);
+    const rgba = decoded?.data;
 
-  let frame = null;
-  let restartInterval = 0;
-  let index = 2;
-
-  while (index < data.length) {
-    if (data[index] !== 0xff) {
-      index += 1;
-      continue;
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+      throw new CodecMediaException("JPEG decode returned invalid dimensions");
+    }
+    if (!rgba || rgba.length < width * height * 4) {
+      throw new CodecMediaException("JPEG decode returned invalid pixel buffer");
     }
 
-    while (index < data.length && data[index] === 0xff) {
-      index += 1;
-    }
-    if (index >= data.length) break;
-
-    const marker = data[index++];
-
-    if (marker === 0xd9) {
-      break;
+    const rgb = Buffer.alloc(width * height * 3);
+    let out = 0;
+    for (let i = 0; i < rgba.length; i += 4) {
+      rgb[out++] = rgba[i];
+      rgb[out++] = rgba[i + 1];
+      rgb[out++] = rgba[i + 2];
     }
 
-    if (marker === 0xc2) {
-      throw new CodecMediaException("Unsupported JPEG: progressive JPEG is not supported by zero-dependency decoder");
+    return { width, height, rgb };
+  } catch (err) {
+    if (err instanceof CodecMediaException) {
+      throw err;
     }
-
-    if (marker === 0xda) {
-      if (!frame) {
-        throw new CodecMediaException("Invalid JPEG data: missing SOF0 frame before SOS");
-      }
-
-      const segmentLength = readU16BE(data, index);
-      index += 2;
-      const segmentStart = index;
-      const segmentEnd = segmentStart + segmentLength - 2;
-      if (segmentEnd > data.length) {
-        throw new CodecMediaException("Invalid JPEG SOS segment length");
-      }
-
-      const scan = parseSos(data.subarray(segmentStart, segmentEnd), frame, huffmanDc, huffmanAc);
-      const entropy = collectEntropyData(data, segmentEnd);
-      return decodeScanToRgb(frame, scan, entropy.bytes, quantTables, restartInterval, huffmanDc, huffmanAc);
-    }
-
-    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
-      continue;
-    }
-
-    if (index + 1 >= data.length) {
-      throw new CodecMediaException("Invalid JPEG marker segment");
-    }
-
-    const segmentLength = readU16BE(data, index);
-    index += 2;
-    const segmentStart = index;
-    const segmentEnd = segmentStart + segmentLength - 2;
-    if (segmentLength < 2 || segmentEnd > data.length) {
-      throw new CodecMediaException("Invalid JPEG segment length");
-    }
-
-    const segment = data.subarray(segmentStart, segmentEnd);
-    if (marker === 0xdb) {
-      parseDqt(segment, quantTables);
-    } else if (marker === 0xc4) {
-      parseDht(segment, huffmanDc, huffmanAc);
-    } else if (marker === 0xc0) {
-      frame = parseSof0(segment);
-    } else if (marker === 0xdd) {
-      if (segment.length !== 2) {
-        throw new CodecMediaException("Invalid JPEG DRI segment");
-      }
-      restartInterval = readU16BE(segment, 0);
-    }
-
-    index = segmentEnd;
+    throw new CodecMediaException("Unsupported or invalid JPEG data", err);
   }
-
-  throw new CodecMediaException("Invalid JPEG data: missing SOS marker");
 }
 
 function parseDqt(segment, quantTables) {

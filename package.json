@@ -38,6 +38,9 @@
   "scripts": {
     "test": "node ./src/smoke.test.js"
   },
+  "dependencies": {
+    "jpeg-js": "^0.4.4"
+  },
   "files": [
     "src",
     "README.md",
