@@ -54,7 +54,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 - You can opt in to external adapters by passing options to `createDefault(options)`.
 - Example opt-in capabilities:
   - `enableFfprobeEnhancement: true` to enrich MOV/MP4/WebM probe output when `ffprobe` is available.
-  - `imageToImageTranscodeConverter` to inject a custom image converter implementation (for example one backed by `ffmpeg`).
+  - `imageToImageTranscodeConverter` to inject/override image converter implementation when you need custom behavior.
 
 ## API Behavior Summary
 
@@ -74,7 +74,8 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 - `readMetadata` uses sidecar metadata persistence; it is **not** a full embedded tag extractor (for example ID3 album art/APIC).
 - Audio-to-audio conversion is not implemented yet for real transcode cases (for example `mp3 -> ogg`).
 - The only temporary audio conversion path is a stub `wav <-> pcm` route.
-- Image-to-image transcoding is not enabled in the default zero-dependency core.
+- Default zero-dependency image transcoding currently supports `jpg/jpeg -> png/bmp`.
+- Other image transcode pairs are still limited and should use `imageToImageTranscodeConverter` override when needed.
 - Rich MOV/MP4/WebM ffprobe enrichment is disabled by default and must be explicitly enabled.
 - For OpenAL workflows that require OGG from MP3 input, use an external transcoder first (for example ffmpeg), then play the produced OGG.
 

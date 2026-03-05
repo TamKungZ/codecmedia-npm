@@ -1,6 +1,6 @@
 {
   "name": "codecmedia",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "type": "module",
   "description": "Node.js port of CodecMedia for media probing, validation, metadata sidecar persistence, audio extraction, playback workflow simulation, and conversion routing (Image/Video/Audio).",
   "license": "Apache-2.0",

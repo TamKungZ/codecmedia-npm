@@ -1,6 +1,7 @@
 import { CodecMediaException } from "../../errors/CodecMediaException.js";
 import { ConversionRoute } from "./ConversionRoute.js";
 import { ConversionRouteResolver } from "./ConversionRouteResolver.js";
+import { BuiltinImageTranscodeConverter } from "./BuiltinImageTranscodeConverter.js";
 import { SameFormatCopyConverter } from "./SameFormatCopyConverter.js";
 import { WavPcmStubConverter } from "./WavPcmStubConverter.js";
 import { UnsupportedRouteConverter } from "./UnsupportedRouteConverter.js";
@@ -37,9 +38,7 @@ export class DefaultConversionHub {
     }
 
     this.#imageToImageTranscodeConverter = imageToImageTranscodeConverter
-      ?? new UnsupportedRouteConverter(
-        "image->image transcoding is not implemented in zero-dependency core (provide an opt-in external converter)"
-      );
+      ?? new BuiltinImageTranscodeConverter();
   }
 
   /**

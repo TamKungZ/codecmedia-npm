@@ -80,7 +80,7 @@ export class Mp3Parser {
       | ((bytes[offset + 2] & 0xff) << 8)
       | (bytes[offset + 3] & 0xff);
 
-    if ((h & 0xffe00000) !== 0xffe00000) return null;
+    if (((h & 0xffe00000) >>> 0) !== 0xffe00000) return null;
 
     const versionBits = (h >>> 19) & 0b11;
     const layerBits = (h >>> 17) & 0b11;

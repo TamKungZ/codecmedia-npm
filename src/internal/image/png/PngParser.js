@@ -1,34 +1,66 @@
 import { CodecMediaException } from "../../../errors/CodecMediaException.js";
 
+const PNG_SIGNATURE = [
+  0x89, 0x50, 0x4e, 0x47,
+  0x0d, 0x0a, 0x1a, 0x0a,
+];
+
 export class PngParser {
   static parse(bytes) {
     const buffer = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes ?? []);
-    if (!this.isLikelyPng(buffer) || buffer.length < 33) {
-      throw new CodecMediaException("Invalid PNG data");
+    if (!this.isLikelyPng(buffer)) {
+      throw new CodecMediaException("Not a PNG file");
+    }
+    if (buffer.length < 33) {
+      throw new CodecMediaException("PNG is too small");
     }
 
-    const ihdrLength = buffer.readUInt32BE(8);
-    const ihdrType = buffer.toString("ascii", 12, 16);
-    if (ihdrLength !== 13 || ihdrType !== "IHDR") {
-      throw new CodecMediaException("Invalid PNG IHDR header");
+    const ihdrLength = this.#readBeInt(buffer, 8);
+    if (ihdrLength !== 13) {
+      throw new CodecMediaException(`Invalid IHDR length: ${ihdrLength}`);
     }
 
-    const width = buffer.readUInt32BE(16);
-    const height = buffer.readUInt32BE(20);
+    if (!(buffer[12] === 0x49 && buffer[13] === 0x48 && buffer[14] === 0x44 && buffer[15] === 0x52)) {
+      throw new CodecMediaException("PNG missing IHDR chunk");
+    }
+
+    const width = this.#readBeInt(buffer, 16);
+    const height = this.#readBeInt(buffer, 20);
+    const bitDepth = buffer[24] & 0xff;
+    const colorType = buffer[25] & 0xff;
+
+    if (width <= 0 || height <= 0) {
+      throw new CodecMediaException("PNG has invalid dimensions");
+    }
+
     return {
       width,
       height,
-      bitDepth: buffer[24] ?? null,
-      colorType: buffer[25] ?? null,
+      bitDepth,
+      colorType,
     };
   }
 
   static isLikelyPng(bytes) {
-    return (
-      !!bytes && bytes.length >= 8 &&
-      bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 &&
-      bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a
-    );
+    if (!bytes || bytes.length < PNG_SIGNATURE.length) {
+      return false;
+    }
+    for (let i = 0; i < PNG_SIGNATURE.length; i++) {
+      if (bytes[i] !== PNG_SIGNATURE[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static #readBeInt(bytes, offset) {
+    if (offset + 4 > bytes.length) {
+      throw new CodecMediaException("Unexpected end of PNG data");
+    }
+    return ((bytes[offset] & 0xff) << 24)
+      | ((bytes[offset + 1] & 0xff) << 16)
+      | ((bytes[offset + 2] & 0xff) << 8)
+      | (bytes[offset + 3] & 0xff);
   }
 }
 

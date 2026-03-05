@@ -139,38 +139,27 @@ export class StubCodecMediaEngine extends CodecMediaEngine {
     }
 
     if (likelyOgg) {
-      try {
-        const info = OggCodec.decode(bytes, input);
-        return createProbeResult({
-          input,
-          mimeType: "audio/ogg",
-          extension: "ogg",
-          mediaType: MediaType.AUDIO,
-          durationMillis: info.durationMillis,
-          streams: [
-            createStreamInfo({
-              index: 0,
-              kind: StreamKind.AUDIO,
-              codec: info.codec,
-              bitrateKbps: info.bitrateKbps,
-              sampleRate: info.sampleRate,
-              channels: info.channels,
-            }),
-          ],
-          tags: {
-            sizeBytes: String(size),
-            bitrateMode: String(info.bitrateMode),
-          },
-        });
-      } catch {
-        // Fall back to extension-only probe for malformed/partial files.
-      }
+      const info = OggCodec.decode(bytes, input);
       return createProbeResult({
         input,
         mimeType: "audio/ogg",
         extension: "ogg",
         mediaType: MediaType.AUDIO,
-        tags: { sizeBytes: String(size) },
+        durationMillis: info.durationMillis,
+        streams: [
+          createStreamInfo({
+            index: 0,
+            kind: StreamKind.AUDIO,
+            codec: info.codec,
+            bitrateKbps: info.bitrateKbps,
+            sampleRate: info.sampleRate,
+            channels: info.channels,
+          }),
+        ],
+        tags: {
+          sizeBytes: String(size),
+          bitrateMode: String(info.bitrateMode),
+        },
       });
     }
 
