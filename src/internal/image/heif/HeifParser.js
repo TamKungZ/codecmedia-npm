@@ -15,8 +15,11 @@ export class HeifParser {
   ]);
 
   static parse(bytes) {
-    if (!bytes || bytes.length < 12) throw new CodecMediaException("Invalid HEIF data");
-    return { majorBrand: bytes.slice(8, 12).toString("ascii"), width: null, height: null, bitDepth: null };
+    const buffer = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes ?? []);
+    const header = this.#resolveFtypHeader(buffer);
+    if (!header) throw new CodecMediaException("Invalid HEIF data");
+    const majorBrand = buffer.slice(header.headerSize, header.headerSize + 4).toString("ascii");
+    return { majorBrand, width: null, height: null, bitDepth: null };
   }
 
   static isLikelyHeif(bytes) {
@@ -27,30 +30,39 @@ export class HeifParser {
 
   static #extractBrands(bytes) {
     const buffer = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes ?? []);
-    if (buffer.length < 16) return [];
-    if (buffer.slice(4, 8).toString("ascii") !== "ftyp") return [];
+    const header = this.#resolveFtypHeader(buffer);
+    if (!header) return [];
 
-    let boxSize = buffer.readUInt32BE(0);
-    let headerSize = 8;
-
-    if (boxSize === 1) {
-      if (buffer.length < 24) return [];
-      const largeSize = this.#readU64BE(buffer, 8);
-      if (largeSize == null || largeSize < 24) return [];
-      boxSize = largeSize;
-      headerSize = 16;
-    } else if (boxSize !== 0 && boxSize < 16) {
-      return [];
-    }
-
-    const end = Math.min(boxSize === 0 ? buffer.length : boxSize, buffer.length);
-    if (end < headerSize + 8) return [];
+    const { headerSize, end } = header;
 
     const brands = [buffer.slice(headerSize, headerSize + 4).toString("ascii").toLowerCase()];
     for (let i = headerSize + 8; i + 4 <= end; i += 4) {
       brands.push(buffer.slice(i, i + 4).toString("ascii").toLowerCase());
     }
     return brands;
+  }
+
+  static #resolveFtypHeader(buffer) {
+    if (buffer.length < 16) return null;
+    if (buffer.slice(4, 8).toString("ascii") !== "ftyp") return null;
+
+    let boxSize = buffer.readUInt32BE(0);
+    let headerSize = 8;
+
+    if (boxSize === 1) {
+      if (buffer.length < 24) return null;
+      const largeSize = this.#readU64BE(buffer, 8);
+      if (largeSize == null || largeSize < 24) return null;
+      boxSize = largeSize;
+      headerSize = 16;
+    } else if (boxSize !== 0 && boxSize < 16) {
+      return null;
+    }
+
+    const end = Math.min(boxSize === 0 ? buffer.length : boxSize, buffer.length);
+    if (end < headerSize + 8) return null;
+
+    return { headerSize, end };
   }
 
   static #readU64BE(buffer, offset) {

@@ -4,6 +4,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-43853D?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![npm](https://img.shields.io/badge/npm-9%2B-CB3837?logo=npm&logoColor=white)](https://www.npmjs.com/)
+[![Java Version](https://img.shields.io/badge/Java%20Version-codecmedia--java-007396?logo=openjdk&logoColor=white)](https://github.com/TamKungZ/codecmedia-java)
 
 CodecMedia is a Node.js port of the original CodecMedia Java engine for media probing, validation, metadata sidecar persistence, audio extraction, playback workflow simulation, and conversion routing.
 
@@ -19,7 +20,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 ## Repository Layout
 
 - `src/` contains the Node.js implementation used by this npm package.
-- `main/java/` is the original Java source layout from the upstream project lineage.
+- `main/java/` refers to the original Java source layout in the upstream CodecMedia project lineage (not part of this npm package repository).
 - npm publishing is intentionally limited to the Node.js package files (`src`, `README.md`, `LICENSE`).
 
 ## Features
@@ -86,6 +87,37 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 
 ```bash
 npm install codecmedia
+```
+
+## Quick Example
+
+```js
+import { CodecMedia } from "codecmedia";
+
+const engine = CodecMedia.createDefault({
+  enableFfprobeEnhancement: false,
+});
+
+const input = "./media/sample.mp4";
+
+const probe = engine.probe(input);
+console.log("Probe:", probe);
+
+const validation = engine.validate(input, { strict: true, maxBytes: 500 * 1024 * 1024 });
+console.log("Validation:", validation);
+
+const metadata = engine.readMetadata(input);
+console.log("Metadata:", metadata);
+
+engine.writeMetadata(input, {
+  entries: {
+    title: "Demo Title",
+    artist: "CodecMedia",
+  },
+});
+
+const playback = engine.play(input, { dryRun: true, allowExternalApp: false });
+console.log("Playback:", playback);
 ```
 
 ## Build & Test
