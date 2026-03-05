@@ -2,7 +2,7 @@
   "name": "codecmedia",
   "version": "1.0.4",
   "type": "module",
-  "description": "Universal media processing library for Node.js. CodecMedia provides media probing, validation, metadata sidecar persistence, audio extraction, playback workflow simulation, and conversion routing (Image/Video/Audio).",
+  "description": "Node.js port of CodecMedia for media probing, validation, metadata sidecar persistence, audio extraction, playback workflow simulation, and conversion routing (Image/Video/Audio).",
   "license": "Apache-2.0",
   "author": {
     "name": "TamKungZ_",
@@ -19,6 +19,7 @@
   "keywords": [
     "media",
     "codec",
+    "java-port",
     "probe",
     "metadata",
     "audio",

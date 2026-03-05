@@ -5,7 +5,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-43853D?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![npm](https://img.shields.io/badge/npm-9%2B-CB3837?logo=npm&logoColor=white)](https://www.npmjs.com/)
 
-CodecMedia is a Node.js(fast port) library for media probing, validation, metadata sidecar persistence, audio extraction, playback workflow simulation, and conversion routing.
+CodecMedia is a Node.js port of the original CodecMedia Java engine for media probing, validation, metadata sidecar persistence, audio extraction, playback workflow simulation, and conversion routing.
 
 <p align="center">
   <img src="https://codecmedia.tamkungz.me/CodecMedia_Full_Logo.png" width="70%" alt="CodecMedia Logo">
@@ -15,6 +15,12 @@ CodecMedia is a Node.js(fast port) library for media probing, validation, metada
 - Zero-Dependency
 - Self-Contained
 - Multi-Platform
+
+## Repository Layout
+
+- `src/` contains the Node.js implementation used by this npm package.
+- `main/java/` is the original Java source layout from the upstream project lineage.
+- npm publishing is intentionally limited to the Node.js package files (`src`, `README.md`, `LICENSE`).
 
 ## Features
 

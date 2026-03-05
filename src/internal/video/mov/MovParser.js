@@ -21,17 +21,37 @@ export class MovParser {
     if (buffer.length < 16) return [];
     if (buffer.slice(4, 8).toString("ascii") !== "ftyp") return [];
 
-    const boxSize = buffer.readUInt32BE(0);
-    if (boxSize < 16 || boxSize === 1) return [];
+    let boxSize = buffer.readUInt32BE(0);
+    let headerSize = 8;
+
+    if (boxSize === 1) {
+      if (buffer.length < 24) return [];
+      const largeSize = this.#readU64BE(buffer, 8);
+      if (largeSize == null || largeSize < 24) return [];
+      boxSize = largeSize;
+      headerSize = 16;
+    } else if (boxSize !== 0 && boxSize < 16) {
+      return [];
+    }
 
     const end = Math.min(boxSize === 0 ? buffer.length : boxSize, buffer.length);
-    if (end < 16) return [];
+    if (end < headerSize + 8) return [];
 
-    const brands = [buffer.slice(8, 12).toString("ascii").toLowerCase()];
-    for (let i = 16; i + 4 <= end; i += 4) {
+    const brands = [buffer.slice(headerSize, headerSize + 4).toString("ascii").toLowerCase()];
+    for (let i = headerSize + 8; i + 4 <= end; i += 4) {
       brands.push(buffer.slice(i, i + 4).toString("ascii").toLowerCase());
     }
     return brands;
+  }
+
+  static #readU64BE(buffer, offset) {
+    if (offset + 8 > buffer.length) return null;
+    let value = 0n;
+    for (let i = 0; i < 8; i++) {
+      value = (value << 8n) | BigInt(buffer[offset + i]);
+    }
+    const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
+    return Number(value > maxSafe ? maxSafe : value);
   }
 }
 
