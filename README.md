@@ -36,21 +36,21 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 
 - Media engine facade via `createDefault()`
 - Probing support for:
-  - MP3
-  - OGG/Vorbis/Opus
-  - WAV (RIFF/WAVE)
-  - AIFF/AIF/AIFC (COMM-based parsing)
-  - M4A (MP4 audio profile)
-  - FLAC (STREAMINFO parsing)
-  - PNG
-  - JPEG
-  - WebP
-  - BMP
-  - TIFF
-  - HEIC/HEIF/AVIF (basic BMFF parsing)
-  - MOV (QuickTime container parsing)
-  - MP4 (basic ISO BMFF parsing)
-  - WebM (EBML container parsing, testing phase)
+  - MP3 (**not ready yet**, in progress)
+  - OGG/Vorbis/Opus (**not ready yet**, in progress)
+  - WAV (RIFF/WAVE) (**not ready yet**, in progress)
+  - AIFF/AIF/AIFC (COMM-based parsing) (**not ready yet**, in progress)
+  - M4A (MP4 audio profile) (**not ready yet**, in progress)
+  - FLAC (STREAMINFO parsing) (**not ready yet**, in progress)
+  - PNG (**not ready yet**, in progress)
+  - JPEG (**not ready yet**, in progress)
+  - WebP (**not ready yet**, in progress)
+  - BMP (**not ready yet**, in progress)
+  - TIFF (**not ready yet**, in progress)
+  - HEIC/HEIF/AVIF (basic BMFF parsing) (**not ready yet**, in progress)
+  - MOV (QuickTime container parsing) (**not ready yet**, in progress)
+  - MP4 (basic ISO BMFF parsing) (**not ready yet**, in progress)
+  - WebM (EBML container parsing, available for testing)
 - Validation with size limits and strict parser checks for implemented formats (coverage is still evolving)
 - Metadata read/write with sidecar persistence (`.codecmedia.properties`)
 - In-Node extraction workflow (limited)
