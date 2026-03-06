@@ -1,6 +1,6 @@
 {
   "name": "codecmedia",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "description": "Node.js port of CodecMedia for media probing, validation, metadata sidecar persistence, audio extraction, playback workflow simulation, and conversion routing (Image/Video/Audio).",
   "license": "Apache-2.0",
@@ -37,7 +37,8 @@
   },
   "scripts": {
     "test": "node --test ./test/*.test.js",
-    "test:webm:real": "node --test ./test/webm.integration.test.js"
+    "test:webm:real": "node --test ./test/webm.integration.test.js",
+    "test:mp3:real": "node --test ./test/mp3.integration.test.js"
   },
   "dependencies": {
     "fp-ts": "^2.16.11",

@@ -36,7 +36,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 
 - Media engine facade via `createDefault()`
 - Probing support for:
-  - MP3 (**not ready yet**, in progress)
+  - MP3 (**available for real-file testing**, experimental)
   - OGG/Vorbis/Opus (**not ready yet**, in progress)
   - WAV (RIFF/WAVE) (**not ready yet**, in progress)
   - AIFF/AIF/AIFC (COMM-based parsing) (**not ready yet**, in progress)
@@ -50,7 +50,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
   - HEIC/HEIF/AVIF (basic BMFF parsing) (**not ready yet**, in progress)
   - MOV (QuickTime container parsing) (**not ready yet**, in progress)
   - MP4 (basic ISO BMFF parsing) (**not ready yet**, in progress)
-  - WebM (EBML container parsing, available for testing)
+  - WebM (**available for real-file testing**, experimental)
 - Validation with size limits and strict parser checks for implemented formats (coverage is still evolving)
 - Metadata read/write with sidecar persistence (`.codecmedia.properties`)
 - In-Node extraction workflow (limited)
