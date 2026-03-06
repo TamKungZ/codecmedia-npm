@@ -1,128 +1,152 @@
-import { CodecMediaException } from "../../errors/CodecMediaException.js";
-
 /**
- * A byte array reader with position tracking, ported from Java ByteArrayReader.
- * Works with Node.js Buffer or Uint8Array.
+ * ByteArrayReader
+ * Port of me.tamkungz.codecmedia.internal.io.ByteArrayReader
+ *
+ * Stateful binary reader over a Buffer/Uint8Array for parsing media headers.
  */
 export class ByteArrayReader {
-  #data;
-  #position;
-
+  /**
+   * @param {Buffer | Uint8Array | null} data
+   */
   constructor(data) {
-    this.#data = data ?? Buffer.alloc(0);
-    this.#position = 0;
+    /** @type {Buffer} */
+    this._data = (data == null || data.length === 0)
+      ? Buffer.alloc(0)
+      : Buffer.from(data);
+    this._position = 0;
   }
 
-  get length() {
-    return this.#data.length;
+  /** @returns {number} Total byte length */
+  length() {
+    return this._data.length;
   }
 
-  get position() {
-    return this.#position;
-  }
-
-  set position(newPosition) {
-    if (newPosition < 0 || newPosition > this.#data.length) {
-      throw new CodecMediaException("Position out of bounds: " + newPosition);
+  /** @returns {number} Current read position */
+  position(newPosition) {
+    if (newPosition === undefined) return this._position;
+    if (newPosition < 0 || newPosition > this._data.length) {
+      throw new RangeError(`Position out of bounds: ${newPosition}`);
     }
-    this.#position = newPosition;
+    this._position = newPosition;
   }
 
-  get remaining() {
-    return this.#data.length - this.#position;
+  /** @returns {number} Bytes remaining from current position */
+  remaining() {
+    return this._data.length - this._position;
   }
 
+  /**
+   * Skip forward by `bytes` bytes.
+   * @param {number} bytes
+   */
   skip(bytes) {
-    this.position = this.#position + bytes;
+    this.position(this._position + bytes);
   }
 
+  /** Read 1 unsigned byte. @returns {number} */
   readU8() {
-    this.#ensureRemaining(1);
-    return this.#data[this.#position++] & 0xFF;
+    this._ensureRemaining(1);
+    return this._data[this._position++];
   }
 
+  /** Read 2 bytes big-endian unsigned. @returns {number} */
   readU16BE() {
-    this.#ensureRemaining(2);
-    const value = ((this.#data[this.#position] & 0xFF) << 8) | (this.#data[this.#position + 1] & 0xFF);
-    this.#position += 2;
-    return value;
+    this._ensureRemaining(2);
+    const v = this._data.readUInt16BE(this._position);
+    this._position += 2;
+    return v;
   }
 
+  /** Read 2 bytes little-endian unsigned. @returns {number} */
   readU16LE() {
-    this.#ensureRemaining(2);
-    const value = (this.#data[this.#position] & 0xFF) | ((this.#data[this.#position + 1] & 0xFF) << 8);
-    this.#position += 2;
-    return value;
+    this._ensureRemaining(2);
+    const v = this._data.readUInt16LE(this._position);
+    this._position += 2;
+    return v;
   }
 
+  /** Read 4 bytes big-endian unsigned. @returns {number} */
   readU32BE() {
-    this.#ensureRemaining(4);
-    const d = this.#data;
-    const p = this.#position;
-    const value = ((d[p] & 0xFF) * 0x1000000)
-      + ((d[p + 1] & 0xFF) << 16)
-      + ((d[p + 2] & 0xFF) << 8)
-      + (d[p + 3] & 0xFF);
-    this.#position += 4;
-    return value >>> 0; // unsigned
+    this._ensureRemaining(4);
+    const v = this._data.readUInt32BE(this._position);
+    this._position += 4;
+    return v;
   }
 
+  /** Read 4 bytes little-endian unsigned. @returns {number} */
   readU32LE() {
-    this.#ensureRemaining(4);
-    const d = this.#data;
-    const p = this.#position;
-    const value = (d[p] & 0xFF)
-      + ((d[p + 1] & 0xFF) << 8)
-      + ((d[p + 2] & 0xFF) << 16)
-      + ((d[p + 3] & 0xFF) * 0x1000000);
-    this.#position += 4;
-    return value >>> 0; // unsigned
+    this._ensureRemaining(4);
+    const v = this._data.readUInt32LE(this._position);
+    this._position += 4;
+    return v;
   }
 
+  /**
+   * Read 8 bytes little-endian unsigned as BigInt.
+   * (Java uses long; JS uses BigInt to avoid precision loss)
+   * @returns {bigint}
+   */
   readU64LE() {
-    this.#ensureRemaining(8);
-    const d = this.#data;
-    const p = this.#position;
-    // Use Number (safe for values up to 2^53)
-    let value = 0;
-    for (let i = 7; i >= 0; i--) {
-      value = value * 256 + (d[p + i] & 0xFF);
-    }
-    this.#position += 8;
-    return value;
+    this._ensureRemaining(8);
+    const v = this._data.readBigUInt64LE(this._position);
+    this._position += 8;
+    return v;
   }
 
+  /**
+   * Read `length` raw bytes.
+   * @param {number} length
+   * @returns {Buffer}
+   */
   readBytes(length) {
-    this.#ensureRemaining(length);
-    const out = this.#data.slice(this.#position, this.#position + length);
-    this.#position += length;
-    return out;
+    this._ensureRemaining(length);
+    const out = this._data.subarray(this._position, this._position + length);
+    this._position += length;
+    return Buffer.from(out);
   }
 
+  /**
+   * Read `length` bytes as ASCII string.
+   * @param {number} length
+   * @returns {string}
+   */
   readAscii(length) {
-    const bytes = this.readBytes(length);
-    return Buffer.from(bytes).toString("ascii");
+    return this.readBytes(length).toString("ascii");
   }
 
+  /**
+   * Peek unsigned byte at `offsetFromPosition` without moving position.
+   * @param {number} offsetFromPosition
+   * @returns {number}
+   */
   peekU8(offsetFromPosition) {
-    const index = this.#position + offsetFromPosition;
-    if (index < 0 || index >= this.#data.length) {
-      throw new CodecMediaException("Peek out of bounds: " + index);
+    const index = this._position + offsetFromPosition;
+    if (index < 0 || index >= this._data.length) {
+      throw new RangeError(`Peek out of bounds: ${index}`);
     }
-    return this.#data[index] & 0xFF;
+    return this._data[index];
   }
 
+  /**
+   * Get unsigned byte at absolute `index`.
+   * @param {number} index
+   * @returns {number}
+   */
   getU8(index) {
-    if (index < 0 || index >= this.#data.length) {
-      throw new CodecMediaException("Index out of bounds: " + index);
+    if (index < 0 || index >= this._data.length) {
+      throw new RangeError(`Index out of bounds: ${index}`);
     }
-    return this.#data[index] & 0xFF;
+    return this._data[index];
   }
 
-  #ensureRemaining(needed) {
-    if (needed < 0 || this.remaining < needed) {
-      throw new CodecMediaException(
-        "Not enough bytes: need " + needed + ", remaining " + this.remaining
+  /**
+   * @private
+   * @param {number} needed
+   */
+  _ensureRemaining(needed) {
+    if (needed < 0 || this.remaining() < needed) {
+      throw new RangeError(
+        `Not enough bytes: need ${needed}, remaining ${this.remaining()}`
       );
     }
   }
