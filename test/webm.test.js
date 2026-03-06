@@ -1,8 +1,14 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import { WebmParser } from "../src/internal/video/webm/WebmParser.js";
 import { WebmCodec } from "../src/internal/video/webm/WebmCodec.js";
 import { CodecMediaException } from "../src/CodecMediaException.js";
+
+const TEST_DIR = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+const REAL_WEBM_480 = path.join(TEST_DIR, "file_example_WEBM_480_900KB.webm");
+const REAL_WEBM_640 = path.join(TEST_DIR, "file_example_WEBM_640_1_4MB.webm");
 
 // ─── Helpers: build minimal valid WebM bytes ──────────────────────────────────
 
@@ -252,6 +258,22 @@ describe("WebmCodec.decodeBytes", () => {
       () => WebmCodec.decodeBytes(buf, "fake.webm"),
       CodecMediaException
     );
+  });
+
+  it("decodes real bundled 480 sample", () => {
+    assert.equal(fs.existsSync(REAL_WEBM_480), true);
+    const buf = fs.readFileSync(REAL_WEBM_480);
+    assert.equal(WebmParser.isLikelyWebm(buf), true);
+    const info = WebmCodec.decodeBytes(buf, REAL_WEBM_480);
+    assert.ok(info);
+  });
+
+  it("decodes real bundled 640 sample", () => {
+    assert.equal(fs.existsSync(REAL_WEBM_640), true);
+    const buf = fs.readFileSync(REAL_WEBM_640);
+    assert.equal(WebmParser.isLikelyWebm(buf), true);
+    const info = WebmCodec.decodeBytes(buf, REAL_WEBM_640);
+    assert.ok(info);
   });
 });
 

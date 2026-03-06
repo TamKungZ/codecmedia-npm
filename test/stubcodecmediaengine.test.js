@@ -94,6 +94,10 @@ const JPEG_BYTES = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.
 
 const engine = new StubCodecMediaEngine();
 
+const TEST_DIR = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+const REAL_WEBM_480 = path.join(TEST_DIR, "file_example_WEBM_480_900KB.webm");
+const REAL_WEBM_640 = path.join(TEST_DIR, "file_example_WEBM_640_1_4MB.webm");
+
 // ─── probe ────────────────────────────────────────────────────────────────────
 
 describe("probe — WebM (parser available)", () => {
@@ -119,6 +123,22 @@ describe("probe — WebM (parser available)", () => {
     const f = write("test3.webm", WEBM_BYTES);
     const r = engine.probe(f);
     assert.ok("sizeBytes" in r.tags);
+  });
+
+  it("probes bundled real 480 sample", () => {
+    assert.equal(fs.existsSync(REAL_WEBM_480), true);
+    const r = engine.probe(REAL_WEBM_480);
+    assert.equal(r.mimeType, "video/webm");
+    assert.equal(r.extension, "webm");
+    assert.equal(r.mediaType, MediaType.VIDEO);
+  });
+
+  it("probes bundled real 640 sample", () => {
+    assert.equal(fs.existsSync(REAL_WEBM_640), true);
+    const r = engine.probe(REAL_WEBM_640);
+    assert.equal(r.mimeType, "video/webm");
+    assert.equal(r.extension, "webm");
+    assert.equal(r.mediaType, MediaType.VIDEO);
   });
 });
 
@@ -227,6 +247,12 @@ describe("validate", () => {
     const r = engine.validate(bigPath, ValidationOptions({ strict: true, maxBytes: 500 * 1024 * 1024 }));
     assert.equal(r.valid, false);
     assert.ok(r.errors[0].includes("Strict validation is limited"));
+  });
+
+  it("strict mode — bundled real 480 sample passes", () => {
+    assert.equal(fs.existsSync(REAL_WEBM_480), true);
+    const r = engine.validate(REAL_WEBM_480, ValidationOptions({ strict: true, maxBytes: 500 * 1024 * 1024 }));
+    assert.equal(r.valid, true);
   });
 });
 

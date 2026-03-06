@@ -46,7 +46,6 @@
   "files": [
     "src",
     "README.md",
-    "LICENSE",
-    "NOTES.md"
+    "LICENSE"
   ]
 }

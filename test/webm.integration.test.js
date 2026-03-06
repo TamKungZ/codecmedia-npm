@@ -15,6 +15,11 @@ const BUNDLED_SAMPLE = path.join(
   "file_example_WEBM_480_900KB.webm"
 );
 
+const BUNDLED_SAMPLE_640 = path.join(
+  path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1")),
+  "file_example_WEBM_640_1_4MB.webm"
+);
+
 function copyOrDownloadSample(filePath) {
   // 1. env override
   const localPath = process.env.CODECMEDIA_WEBM_SAMPLE_PATH;
@@ -78,5 +83,29 @@ describe("WebM integration — real sample file", () => {
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("WebM integration — bundled samples", () => {
+  it("parses bundled 480 sample", () => {
+    assert.equal(fs.existsSync(BUNDLED_SAMPLE), true);
+
+    const bytes = fs.readFileSync(BUNDLED_SAMPLE);
+    assert.equal(WebmParser.isLikelyWebm(bytes), true);
+
+    const info = WebmCodec.decodeBytes(bytes, BUNDLED_SAMPLE);
+    assert.ok(info);
+    assert.equal(typeof info, "object");
+  });
+
+  it("parses bundled 640 sample", () => {
+    assert.equal(fs.existsSync(BUNDLED_SAMPLE_640), true);
+
+    const bytes = fs.readFileSync(BUNDLED_SAMPLE_640);
+    assert.equal(WebmParser.isLikelyWebm(bytes), true);
+
+    const info = WebmCodec.decodeBytes(bytes, BUNDLED_SAMPLE_640);
+    assert.ok(info);
+    assert.equal(typeof info, "object");
   });
 });
