@@ -38,7 +38,8 @@
   "scripts": {
     "test": "node --test ./test/*.test.js",
     "test:webm:real": "node --test ./test/webm.integration.test.js",
-    "test:mp3:real": "node --test ./test/mp3.integration.test.js"
+    "test:mp3:real": "node --test ./test/mp3.integration.test.js",
+    "test:convert": "node --test ./test/convert.test.js"
   },
   "dependencies": {
     "fp-ts": "^2.16.11",

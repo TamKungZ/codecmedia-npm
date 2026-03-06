@@ -2,7 +2,7 @@
  * UnsupportedRouteConverter
  * Port of me.tamkungz.codecmedia.internal.convert.UnsupportedRouteConverter
  */
-import { CodecMediaException } from "../CodecMediaException.js";
+import { CodecMediaException } from "../../CodecMediaException.js";
 
 export class UnsupportedRouteConverter {
   /** @param {string} message */

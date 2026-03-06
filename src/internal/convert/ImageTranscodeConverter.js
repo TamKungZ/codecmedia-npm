@@ -7,8 +7,8 @@
  */
 import fs   from "fs";
 import path from "path";
-import { CodecMediaException } from "../CodecMediaException.js";
-import { ConversionResult }    from "../model/ConversionResult.js";
+import { CodecMediaException } from "../../CodecMediaException.js";
+import { ConversionResult }    from "../../model/ConversionResult.js";
 
 const SUPPORTED_EXTENSIONS = new Set([
   "png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff", "heif", "heic",

@@ -8,8 +8,8 @@
  */
 import fs   from "fs";
 import path from "path";
-import { CodecMediaException } from "../CodecMediaException.js";
-import { ConversionResult }    from "../model/ConversionResult.js";
+import { CodecMediaException } from "../../CodecMediaException.js";
+import { ConversionResult }    from "../../model/ConversionResult.js";
 
 export class WavPcmStubConverter {
   /**

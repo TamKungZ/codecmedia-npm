@@ -2,7 +2,7 @@
  * ConversionRouteResolver
  * Port of me.tamkungz.codecmedia.internal.convert.ConversionRouteResolver
  */
-import { MediaType }       from "../model/MediaType.js";
+import { MediaType }       from "../../model/MediaType.js";
 import { ConversionRoute } from "./ConversionRoute.js";
 
 export class ConversionRouteResolver {

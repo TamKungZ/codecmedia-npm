@@ -10,7 +10,7 @@
  *
  *   const engine = new StubCodecMediaEngine({ conversionHub: new DefaultConversionHub() });
  */
-import { CodecMediaException }      from "../CodecMediaException.js";
+import { CodecMediaException }      from "../../CodecMediaException.js";
 import { ConversionRoute }          from "./ConversionRoute.js";
 import { ConversionRouteResolver }  from "./ConversionRouteResolver.js";
 import { SameFormatCopyConverter }  from "./SameFormatCopyConverter.js";
