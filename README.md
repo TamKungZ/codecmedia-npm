@@ -55,7 +55,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 - Metadata read/write with sidecar persistence (`.codecmedia.properties`) is available
 - In-Node extraction workflow is available in limited mode (copy/same-format behavior, no real transcoding)
 - Playback API is available for dry-run; desktop-open backend is optional and environment-dependent
-- Conversion hub routing exists, but practical conversion is mostly not ready yet and depends on external hub wiring
+- Conversion hub routing is implemented via `DefaultConversionHub` (same-format copy, `wav <-> pcm` stub, image-to-image via codec registry, unsupported routes throw explicit errors)
 
 ### Optional External Adapters (Opt-In)
 
@@ -83,8 +83,9 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 - `readMetadata` uses sidecar metadata persistence; it is **not** a full embedded tag extractor (for example ID3 album art/APIC).
 - Audio-to-audio conversion is not implemented yet for real transcode cases (for example `mp3 -> ogg`).
 - The only temporary audio conversion path is a stub `wav <-> pcm` route and should be treated as non-final behavior.
-- Default image transcoding supports `jpg/jpeg -> png/bmp` (including progressive JPEG sources via bundled JPEG decoder).
-- Other image transcode pairs are still limited and should use `imageToImageTranscodeConverter` override when needed.
+- Same-extension conversion is passthrough copy (`reencoded=false`) via `SameFormatCopyConverter`.
+- Image-to-image conversion is routed through `ImageTranscodeConverter` and requires registered image codecs.
+- Unsupported routes (for example `video -> audio`, `video -> video`, `audio -> image`) intentionally throw explicit `CodecMediaException` messages.
 - Rich MOV/MP4/WebM ffprobe enrichment is disabled by default and must be explicitly enabled.
 - WebM parsing/probing should be considered experimental while testing is ongoing.
 - For OpenAL workflows that require OGG from MP3 input, use an external transcoder first (for example ffmpeg), then play the produced OGG.
@@ -136,6 +137,8 @@ console.log("Playback:", playback);
 ```bash
 npm test
 ```
+
+Conversion pipeline tests are available in `test/convert.test.js` and are included by the default Node test glob.
 
 ## License
 

@@ -48,6 +48,7 @@
   "files": [
     "src",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "test"
   ]
 }
