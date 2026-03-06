@@ -51,11 +51,11 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
   - MOV (QuickTime container parsing) (**not ready yet**, in progress)
   - MP4 (basic ISO BMFF parsing) (**not ready yet**, in progress)
   - WebM (**available for real-file testing**, experimental)
-- Validation with size limits and strict parser checks for implemented formats (coverage is still evolving)
-- Metadata read/write with sidecar persistence (`.codecmedia.properties`)
-- In-Node extraction workflow (limited)
-- Playback API with dry-run support and optional desktop-open backend
-- Conversion hub routing is present, but practical conversion support is still very limited
+- Validation with size limits works; strict parser checks are partial (currently reliable for WebM, others still evolving)
+- Metadata read/write with sidecar persistence (`.codecmedia.properties`) is available
+- In-Node extraction workflow is available in limited mode (copy/same-format behavior, no real transcoding)
+- Playback API is available for dry-run; desktop-open backend is optional and environment-dependent
+- Conversion hub routing exists, but practical conversion is mostly not ready yet and depends on external hub wiring
 
 ### Optional External Adapters (Opt-In)
 
