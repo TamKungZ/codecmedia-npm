@@ -13,7 +13,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 ## Project Status (Important)
 
 - This npm package is still in active development and **not all media files/formats are supported yet**.
-- **WebM support is currently under testing** and may change.
+- **WebM and WAV support are currently under testing** and may change.
 - **Conversion/transcoding is not fully supported yet** (current routes are limited and mostly placeholder behavior).
 - The Node.js implementation is an **incomplete port from the Java version**.
 
@@ -38,7 +38,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 - Probing support for:
   - MP3 (**available for real-file testing**, experimental)
   - OGG/Vorbis/Opus (**not ready yet**, in progress)
-  - WAV (RIFF/WAVE) (**not ready yet**, in progress)
+  - WAV (RIFF/RIFX/RF64, robust chunk scanning) (**available for real-file testing**, experimental)
   - AIFF/AIF/AIFC (COMM-based parsing) (**not ready yet**, in progress)
   - M4A (MP4 audio profile) (**not ready yet**, in progress)
   - FLAC (STREAMINFO parsing) (**not ready yet**, in progress)
@@ -51,7 +51,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
   - MOV (QuickTime container parsing) (**not ready yet**, in progress)
   - MP4 (basic ISO BMFF parsing) (**not ready yet**, in progress)
   - WebM (**available for real-file testing**, experimental)
-- Validation with size limits works; strict parser checks are partial (currently reliable for WebM, others still evolving)
+- Validation with size limits works; strict parser checks are partial (currently reliable for WebM and WAV, others still evolving)
 - Metadata read/write with sidecar persistence (`.codecmedia.properties`) is available
 - In-Node extraction workflow is available in limited mode (copy/same-format behavior, no real transcoding)
 - Playback API is available for dry-run; desktop-open backend is optional and environment-dependent
@@ -87,7 +87,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 - Image-to-image conversion is routed through `ImageTranscodeConverter` and requires registered image codecs.
 - Unsupported routes (for example `video -> audio`, `video -> video`, `audio -> image`) intentionally throw explicit `CodecMediaException` messages.
 - Rich MOV/MP4/WebM ffprobe enrichment is disabled by default and must be explicitly enabled.
-- WebM parsing/probing should be considered experimental while testing is ongoing.
+- WebM and WAV parsing/probing should be considered experimental while testing is ongoing.
 - For OpenAL workflows that require OGG from MP3 input, use an external transcoder first (for example ffmpeg), then play the produced OGG.
 
 ## Requirements
@@ -139,6 +139,12 @@ npm test
 ```
 
 Conversion pipeline tests are available in `test/convert.test.js` and are included by the default Node test glob.
+
+Run only conversion tests:
+
+```bash
+node --test ./test/convert.test.js
+```
 
 ## License
 

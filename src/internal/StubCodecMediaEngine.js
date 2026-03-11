@@ -24,6 +24,8 @@ import { ValidationOptions }   from "../options/ValidationOptions.js";
 // Video parsers/codecs
 import { WebmParser } from "./video/webm/WebmParser.js";
 import { WebmCodec }  from "./video/webm/WebmCodec.js";
+import { WavParser } from "./audio/wav/WavParser.js";
+import { WavCodec } from "./audio/wav/WavCodec.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -150,17 +152,14 @@ export class StubCodecMediaEngine extends CodecMediaEngine {
     // ── WAV ─────────────────────────────────────────────────────────────────
     if (likelyWav) {
       try {
-        const WavCodec = requireParser("WavCodec");
-        if (WavCodec) {
-          const info = WavCodec.decode(bytes, input);
-          return ProbeResult({
-            input, mimeType: "audio/wav", extension: "wav", mediaType: MediaType.AUDIO,
-            durationMillis: info.durationMillis,
-            streams: [StreamInfo({ index: 0, kind: StreamKind.AUDIO, codec: "pcm",
-              bitrateKbps: info.bitrateKbps, sampleRate: info.sampleRate, channels: info.channels })],
-            tags: { sizeBytes: String(size), bitrateMode: info.bitrateMode },
-          });
-        }
+        const info = WavCodec.decode(bytes, input);
+        return ProbeResult({
+          input, mimeType: "audio/wav", extension: "wav", mediaType: MediaType.AUDIO,
+          durationMillis: info.durationMillis,
+          streams: [StreamInfo({ index: 0, kind: StreamKind.AUDIO, codec: info.codec,
+            bitrateKbps: info.bitrateKbps, sampleRate: info.sampleRate, channels: info.channels })],
+          tags: { sizeBytes: String(size), bitrateMode: info.bitrateMode, bitsPerSample: String(info.bitsPerSample) },
+        });
       } catch { /* fall through */ }
       return ProbeResult({ input, mimeType: "audio/wav", extension: "wav",
         mediaType: MediaType.AUDIO, tags: { sizeBytes: String(size) } });
@@ -665,6 +664,10 @@ export class StubCodecMediaEngine extends CodecMediaEngine {
 function runStrictParser(ext, bytes) {
   try {
     switch (ext) {
+      case "wav": {
+        WavParser.parse(bytes);
+        return null;
+      }
       case "webm": {
         WebmParser.parse(bytes);
         return null;
@@ -772,7 +775,12 @@ function isLikelyMp3(b)  {
   return b.length >= 2 && (b[0] & 0xff) === 0xff && (b[1] & 0xe0) === 0xe0;
 }
 function isLikelyOgg(b)  { return b.length >= 4 && b[0] === 0x4f && b[1] === 0x67 && b[2] === 0x67 && b[3] === 0x53; }
-function isLikelyWav(b)  { return b.length >= 12 && b[0]===0x52&&b[1]===0x49&&b[2]===0x46&&b[3]===0x46 && b[8]===0x57&&b[9]===0x41&&b[10]===0x56&&b[11]===0x45; }
+function isLikelyWav(b)  {
+  if (b.length < 12) return false;
+  const riff = b.slice(0, 4).toString("ascii");
+  if (riff !== "RIFF" && riff !== "RIFX" && riff !== "RF64") return false;
+  return b[8]===0x57&&b[9]===0x41&&b[10]===0x56&&b[11]===0x45;
+}
 function isLikelyAiff(b) { return b.length >= 12 && b[0]===0x46&&b[1]===0x4f&&b[2]===0x52&&b[3]===0x4d && (b[8]===0x41&&b[9]===0x49&&b[10]===0x46&&b[11]===0x46 || b[8]===0x41&&b[9]===0x49&&b[10]===0x46&&b[11]===0x43); }
 function isLikelyFlac(b) { return b.length >= 4 && b[0]===0x66&&b[1]===0x4c&&b[2]===0x61&&b[3]===0x43; }
 function isLikelyPng(b)  { return b.length >= 8 && b[0]===0x89&&b[1]===0x50&&b[2]===0x4e&&b[3]===0x47&&b[4]===0x0d&&b[5]===0x0a&&b[6]===0x1a&&b[7]===0x0a; }
