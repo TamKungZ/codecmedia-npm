@@ -28,6 +28,9 @@ import { Mp4Codec }   from "./video/mp4/Mp4Codec.js";
 import { isSupportedMp4MajorBrand } from "./video/mp4/Mp4Brands.js";
 import { WavParser } from "./audio/wav/WavParser.js";
 import { WavCodec } from "./audio/wav/WavCodec.js";
+import { PngParser } from "./image/png/PngParser.js";
+import { PngCodec } from "./image/png/PngCodec.js";
+import { registerImageCodec } from "./convert/ImageTranscodeConverter.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -713,6 +716,11 @@ export function registerParser(key, module) {
 function requireParser(key) {
   return PARSER_REGISTRY[key] ?? null;
 }
+
+// Built-in parser/codec registrations (ported modules)
+registerParser("PngParser", PngParser);
+registerParser("PngCodec", PngCodec);
+registerImageCodec("png", PngCodec);
 
 // ─── Private file helpers ─────────────────────────────────────────────────────
 

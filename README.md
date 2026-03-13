@@ -12,7 +12,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 
 ## Project Status (Important)
 
-- Current npm release: **1.1.4**
+- Current npm release: **1.1.5**
 - This npm package is still in active development and **not all media files/formats are supported yet**.
 - **WebM, WAV, and MP4 support are currently under testing** and may change.
 - **Conversion/transcoding is not fully supported yet** (current routes are limited and mostly placeholder behavior).
@@ -43,7 +43,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
   - AIFF/AIF/AIFC (COMM-based parsing) (**not ready yet**, in progress)
   - M4A (MP4 audio profile) (**not ready yet**, in progress)
   - FLAC (STREAMINFO parsing) (**not ready yet**, in progress)
-  - PNG (**not ready yet**, in progress)
+  - PNG (**available for real-file testing**, experimental)
   - JPEG (**not ready yet**, in progress)
   - WebP (**not ready yet**, in progress)
   - BMP (**not ready yet**, in progress)
@@ -85,7 +85,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 - Audio-to-audio conversion is not implemented yet for real transcode cases (for example `mp3 -> ogg`).
 - The only temporary audio conversion path is a stub `wav <-> pcm` route and should be treated as non-final behavior.
 - Same-extension conversion is passthrough copy (`reencoded=false`) via `SameFormatCopyConverter`.
-- Image-to-image conversion is routed through `ImageTranscodeConverter` and requires registered image codecs.
+- Image-to-image conversion is routed through `ImageTranscodeConverter`; PNG codec wiring (`png -> png`) is available in experimental mode.
 - Unsupported routes (for example `video -> audio`, `video -> video`, `audio -> image`) intentionally throw explicit `CodecMediaException` messages.
 - Rich MOV/MP4/WebM ffprobe enrichment is disabled by default and must be explicitly enabled.
 - WebM and WAV parsing/probing should be considered experimental while testing is ongoing.
@@ -140,12 +140,12 @@ npm test
 ```
 
 <details>
-  <summary><strong>Latest test result (v1.1.4) — npm test</strong></summary>
+  <summary><strong>Latest test result (v1.1.5) — npm test</strong></summary>
 
 ```text
 PS G:\Projects\Code\Lib\CodecMedia\codecmedia-npm> npm run test
 
-> codecmedia@1.1.4 test
+> codecmedia@1.1.5 test
 > node --test ./test/*.test.js
 
 ℹ tests 159

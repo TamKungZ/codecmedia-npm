@@ -25,6 +25,8 @@ import { SameFormatCopyConverter }  from "../src/internal/convert/SameFormatCopy
 import { WavPcmStubConverter }      from "../src/internal/convert/WavPcmStubConverter.js";
 import { UnsupportedRouteConverter } from "../src/internal/convert/UnsupportedRouteConverter.js";
 import { DefaultConversionHub }     from "../src/internal/convert/DefaultConversionHub.js";
+import { ImageTranscodeConverter, registerImageCodec } from "../src/internal/convert/ImageTranscodeConverter.js";
+import { PngCodec }                 from "../src/internal/image/png/PngCodec.js";
 import { MediaType }                from "../src/model/MediaType.js";
 import { ConversionOptions }        from "../src/options/ConversionOptions.js";
 import { CodecMediaException }      from "../src/CodecMediaException.js";
@@ -49,6 +51,8 @@ function writeDummy(filePath, content = "DUMMY") {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, content);
 }
+
+const FIXTURE_PNG_500KB = path.join(process.cwd(), "test", "file_example_PNG_500kB.png");
 
 // ─── Temp dir management ──────────────────────────────────────────────────────
 
@@ -416,5 +420,35 @@ describe("DefaultConversionHub", () => {
 
     assert.equal(result.reencoded, false);
     assert.equal(fs.readFileSync(output, "utf8"), "PNG_DATA");
+  });
+});
+
+// ─── ImageTranscodeConverter ───────────────────────────────────────────────────
+
+describe("ImageTranscodeConverter", () => {
+  beforeEach(() => {
+    registerImageCodec("png", PngCodec);
+  });
+
+  it("png → png transcode succeeds with registered PngCodec", () => {
+    const converter = new ImageTranscodeConverter();
+    const dir = tmpDir();
+    const input = path.join(dir, "in.png");
+    const output = path.join(dir, "out.png");
+    fs.copyFileSync(FIXTURE_PNG_500KB, input);
+
+    const result = converter.convert(makeRequest({
+      input,
+      output,
+      sourceExtension: "png",
+      targetExtension: "png",
+      sourceMediaType: MediaType.IMAGE,
+      targetMediaType: MediaType.IMAGE,
+      options: ConversionOptions({ targetFormat: "png", preset: "balanced", overwrite: true }),
+    }));
+
+    assert.equal(result.format, "png");
+    assert.equal(result.reencoded, true);
+    assert.deepEqual(fs.readFileSync(output), fs.readFileSync(FIXTURE_PNG_500KB));
   });
 });
