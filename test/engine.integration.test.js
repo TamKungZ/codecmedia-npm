@@ -359,47 +359,38 @@ describe("WebM — writeMetadata() + readMetadata() round-trip", () => {
 });
 
 // ─── MP4 ─────────────────────────────────────────────────────────────────────
-//
-// StubCodecMediaEngine sniffs magic bytes in priority order:
-//   isLikelyMov fires BEFORE isLikelyMp4 (both match ftyp-based MP4 containers).
-// Therefore real .mp4 files currently probe as video/quicktime / extension "mov".
-// These tests assert the ACTUAL engine behaviour and will be tightened once
-// Mp4Codec is registered (isLikelyMov / isLikelyMp4 priority re-ordered).
-
-/** Probe a bundled MP4 file and return its result (mimeType may be quicktime or mp4). */
-function probeMp4(key) {
-  return engine.probe(PRESENT[key]);
-}
 
 describe("MP4 — probe (both bundled files)", () => {
   it("probe() — file_example_MP4_480_1_5MG", (t) => {
     skipIfMissing(t, "mp4_480");
-    const r = probeMp4("mp4_480");
-    // Engine currently detects as MOV (isLikelyMov fires before isLikelyMp4)
-    // Accept both until Mp4Codec is registered and priority is fixed.
-    const validMime = ["video/mp4", "video/quicktime"];
-    assert.ok(validMime.includes(r.mimeType), `mimeType should be mp4 or quicktime, got: ${r.mimeType}`);
-    assert.equal(r.mediaType, MediaType.VIDEO, "mediaType");
+    const r = engine.probe(PRESENT.mp4_480);
+    assertVideoProbe(r, "video/mp4", "mp4");
+    const v = r.streams.find(s => s.kind === StreamKind.VIDEO);
+    assert.ok(v.codec && v.codec.length > 0, "video codec present");
+    assert.ok(r.durationMillis > 0, "durationMillis > 0");
   });
 
   it("probe() — file_example_MP4_640_3MG", (t) => {
     skipIfMissing(t, "mp4_640");
-    const r = probeMp4("mp4_640");
-    const validMime = ["video/mp4", "video/quicktime"];
-    assert.ok(validMime.includes(r.mimeType), `mimeType should be mp4 or quicktime, got: ${r.mimeType}`);
-    assert.equal(r.mediaType, MediaType.VIDEO, "mediaType");
+    const r = engine.probe(PRESENT.mp4_640);
+    assertVideoProbe(r, "video/mp4", "mp4");
+    assert.ok(r.durationMillis > 0, "durationMillis > 0");
   });
 
-  it("if Mp4Codec is registered: streams present with dimensions for 480 sample", (t) => {
+  it("480 sample: width >= 480 or height >= 480", (t) => {
     skipIfMissing(t, "mp4_480");
-    const r = probeMp4("mp4_480");
-    if (r.streams.length === 0) {
-      t.skip("Mp4Codec not yet registered — skipping stream assertions");
-      return;
-    }
+    const r = engine.probe(PRESENT.mp4_480);
     const v = r.streams.find(s => s.kind === StreamKind.VIDEO);
-    assert.ok(v, "has VIDEO stream");
-    assert.ok(v.width > 0 && v.height > 0, "has dimensions");
+    assert.ok(v.width >= 480 || v.height >= 480,
+      `expected at least one dimension >= 480, got ${v.width}x${v.height}`);
+  });
+
+  it("640 sample: width >= 640 or height >= 640", (t) => {
+    skipIfMissing(t, "mp4_640");
+    const r = engine.probe(PRESENT.mp4_640);
+    const v = r.streams.find(s => s.kind === StreamKind.VIDEO);
+    assert.ok(v.width >= 640 || v.height >= 640,
+      `expected at least one dimension >= 640, got ${v.width}x${v.height}`);
   });
 });
 
@@ -428,8 +419,8 @@ describe("MP4 — readMetadata()", () => {
   it("base fields present for 480 sample", (t) => {
     skipIfMissing(t, "mp4_480");
     const m = engine.readMetadata(PRESENT.mp4_480);
-    const validMime = ["video/mp4", "video/quicktime"];
-    assert.ok(validMime.includes(m.entries.mimeType), `mimeType: ${m.entries.mimeType}`);
+    assert.equal(m.entries.mimeType,  "video/mp4");
+    assert.equal(m.entries.extension, "mp4");
     assert.equal(m.entries.mediaType, MediaType.VIDEO);
   });
 });
@@ -443,9 +434,7 @@ describe("MP4 — writeMetadata() + readMetadata() round-trip", () => {
     const m = engine.readMetadata(copy);
     assert.equal(m.entries.scene, "1");
     assert.equal(m.entries.take,  "3");
-    // mimeType comes from probe (quicktime or mp4 depending on engine sniff order)
-    const validMime = ["video/mp4", "video/quicktime"];
-    assert.ok(validMime.includes(m.entries.mimeType), `mimeType: ${m.entries.mimeType}`);
+    assert.equal(m.entries.mimeType, "video/mp4");
   });
 });
 

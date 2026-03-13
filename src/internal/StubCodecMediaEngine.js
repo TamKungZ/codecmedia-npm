@@ -24,6 +24,8 @@ import { ValidationOptions }   from "../options/ValidationOptions.js";
 // Video parsers/codecs
 import { WebmParser } from "./video/webm/WebmParser.js";
 import { WebmCodec }  from "./video/webm/WebmCodec.js";
+import { Mp4Codec }   from "./video/mp4/Mp4Codec.js";
+import { isSupportedMp4MajorBrand } from "./video/mp4/Mp4Brands.js";
 import { WavParser } from "./audio/wav/WavParser.js";
 import { WavCodec } from "./audio/wav/WavCodec.js";
 
@@ -87,9 +89,12 @@ export class StubCodecMediaEngine extends CodecMediaEngine {
     const likelyBmp  = ext === "bmp"  || isLikelyBmp(prefix);
     const likelyTiff = ["tif","tiff"].includes(ext) || isLikelyTiff(prefix);
     const likelyHeif = ["heic","heif","avif"].includes(ext) || isLikelyHeif(prefix);
-    const likelyMov  = ext === "mov"  || isLikelyMov(prefix);
-    const likelyMp4  = ["mp4","m4a"].includes(ext) || isLikelyMp4(prefix);
-    const likelyWebm = ext === "webm" || WebmParser.isLikelyWebm(prefix);
+    const extWantsMp4 = ["mp4","m4a"].includes(ext);
+    const likelyMp4   = extWantsMp4 || isLikelyMp4(prefix);
+    // Avoid MOV false-positives for explicit .mp4/.m4a while still honoring true .mov extension.
+    // isLikelyMov() also matches ftyp-based MP4 containers, so extension intent must arbitrate.
+    const likelyMov   = ext === "mov" || (!extWantsMp4 && isLikelyMov(prefix));
+    const likelyWebm  = ext === "webm" || WebmParser.isLikelyWebm(prefix);
 
     const anyKnown = likelyMp3 || likelyOgg || likelyWav || likelyAiff || likelyFlac ||
                      likelyPng || likelyJpeg || likelyWebp || likelyBmp || likelyTiff ||
@@ -366,31 +371,28 @@ export class StubCodecMediaEngine extends CodecMediaEngine {
       const mp4Mime   = mp4Ext === "m4a" ? "audio/mp4" : "video/mp4";
       const mp4Media  = mp4Ext === "m4a" ? MediaType.AUDIO : MediaType.VIDEO;
       try {
-        const Mp4Codec = requireParser("Mp4Codec");
-        if (Mp4Codec) {
-          const info = Mp4Codec.decode(bytes, input);
-          const tags = { sizeBytes: String(size) };
-          if (info.majorBrand?.trim())         tags.majorBrand         = info.majorBrand;
-          if (info.videoCodec?.trim())         tags.videoCodec         = info.videoCodec;
-          if (info.audioCodec?.trim())         tags.audioCodec         = info.audioCodec;
-          if (info.displayAspectRatio?.trim()) tags.displayAspectRatio = info.displayAspectRatio;
-          if (info.bitDepth > 0)               tags.bitDepth           = String(info.bitDepth);
-          if (info.videoBitrateKbps > 0)       tags.videoBitrateKbps   = String(info.videoBitrateKbps);
-          if (info.audioBitrateKbps > 0)       tags.audioBitrateKbps   = String(info.audioBitrateKbps);
-          const streams = [];
-          if (mp4Media === MediaType.VIDEO && info.width > 0 && info.height > 0) {
-            streams.push(StreamInfo({ index: 0, kind: StreamKind.VIDEO,
-              codec: info.videoCodec ?? "unknown", bitrateKbps: info.videoBitrateKbps,
-              width: info.width, height: info.height, frameRate: info.frameRate }));
-          }
-          if (info.sampleRate > 0 && info.channels > 0) {
-            streams.push(StreamInfo({ index: streams.length, kind: StreamKind.AUDIO,
-              codec: info.audioCodec ?? "unknown", bitrateKbps: info.audioBitrateKbps,
-              sampleRate: info.sampleRate, channels: info.channels }));
-          }
-          return ProbeResult({ input, mimeType: mp4Mime, extension: mp4Ext,
-            mediaType: mp4Media, durationMillis: info.durationMillis, streams, tags });
+        const info = Mp4Codec.decode(bytes, input);
+        const tags = { sizeBytes: String(size) };
+        if (info.majorBrand?.trim())         tags.majorBrand         = info.majorBrand;
+        if (info.videoCodec?.trim())         tags.videoCodec         = info.videoCodec;
+        if (info.audioCodec?.trim())         tags.audioCodec         = info.audioCodec;
+        if (info.displayAspectRatio?.trim()) tags.displayAspectRatio = info.displayAspectRatio;
+        if (info.bitDepth > 0)               tags.bitDepth           = String(info.bitDepth);
+        if (info.videoBitrateKbps > 0)       tags.videoBitrateKbps   = String(info.videoBitrateKbps);
+        if (info.audioBitrateKbps > 0)       tags.audioBitrateKbps   = String(info.audioBitrateKbps);
+        const streams = [];
+        if (mp4Media === MediaType.VIDEO && info.width > 0 && info.height > 0) {
+          streams.push(StreamInfo({ index: 0, kind: StreamKind.VIDEO,
+            codec: info.videoCodec ?? "unknown", bitrateKbps: info.videoBitrateKbps,
+            width: info.width, height: info.height, frameRate: info.frameRate }));
         }
+        if (info.sampleRate > 0 && info.channels > 0) {
+          streams.push(StreamInfo({ index: streams.length, kind: StreamKind.AUDIO,
+            codec: info.audioCodec ?? "unknown", bitrateKbps: info.audioBitrateKbps,
+            sampleRate: info.sampleRate, channels: info.channels }));
+        }
+        return ProbeResult({ input, mimeType: mp4Mime, extension: mp4Ext,
+          mediaType: mp4Media, durationMillis: info.durationMillis, streams, tags });
       } catch { /* fall through */ }
       return ProbeResult({ input, mimeType: mp4Mime, extension: mp4Ext,
         mediaType: mp4Media, tags: { sizeBytes: String(size) } });
@@ -803,7 +805,7 @@ function isLikelyMp4(b)  {
   const t = b.slice(4, 8).toString("ascii");
   if (t !== "ftyp") return false;
   const brand = b.slice(8, 12).toString("ascii");
-  return ["isom","iso2","mp41","mp42","m4v ","m4a ","M4A ","avc1","dash","mp4 "].includes(brand);
+  return isSupportedMp4MajorBrand(brand);
 }
 
 // ─── MIME / MediaType maps ─────────────────────────────────────────────────────

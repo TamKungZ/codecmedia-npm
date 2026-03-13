@@ -12,8 +12,9 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
 
 ## Project Status (Important)
 
+- Current npm release: **1.1.4**
 - This npm package is still in active development and **not all media files/formats are supported yet**.
-- **WebM and WAV support are currently under testing** and may change.
+- **WebM, WAV, and MP4 support are currently under testing** and may change.
 - **Conversion/transcoding is not fully supported yet** (current routes are limited and mostly placeholder behavior).
 - The Node.js implementation is an **incomplete port from the Java version**.
 
@@ -49,7 +50,7 @@ CodecMedia is a Node.js port of the original CodecMedia Java engine for media pr
   - TIFF (**not ready yet**, in progress)
   - HEIC/HEIF/AVIF (basic BMFF parsing) (**not ready yet**, in progress)
   - MOV (QuickTime container parsing) (**not ready yet**, in progress)
-  - MP4 (basic ISO BMFF parsing) (**not ready yet**, in progress)
+  - MP4 (basic ISO BMFF parsing) (**available for real-file testing**, experimental)
   - WebM (**available for real-file testing**, experimental)
 - Validation with size limits works; strict parser checks are partial (currently reliable for WebM and WAV, others still evolving)
 - Metadata read/write with sidecar persistence (`.codecmedia.properties`) is available
@@ -137,6 +138,27 @@ console.log("Playback:", playback);
 ```bash
 npm test
 ```
+
+<details>
+  <summary><strong>Latest test result (v1.1.4) — npm test</strong></summary>
+
+```text
+PS G:\Projects\Code\Lib\CodecMedia\codecmedia-npm> npm run test
+
+> codecmedia@1.1.4 test
+> node --test ./test/*.test.js
+
+ℹ tests 159
+ℹ suites 48
+ℹ pass 159
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1875.1237
+```
+
+</details>
 
 Conversion pipeline tests are available in `test/convert.test.js` and are included by the default Node test glob.
 
